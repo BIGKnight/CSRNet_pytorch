@@ -10,7 +10,7 @@ crop_height = 384
 crop_weight = 512
 
 default_transform = transforms.Compose([
-        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
+        # transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
         transforms.TenCrop((crop_height, crop_weight), vertical_flip=False),
         transforms.Lambda(
             lambda crops: [
@@ -42,8 +42,8 @@ class DatasetConstructor(data.Dataset):
                  gt_dir_path,
                  train_num,
                  validate_num,
-                 transformer,
-                 gt_transformer,
+                 transformer=default_transform,
+                 gt_transformer=gt_transform,
                  if_train=True
                  ):
         self.train_num = train_num
@@ -73,7 +73,8 @@ class DatasetConstructor(data.Dataset):
             if self.gt_transform is not None:
                 gt_map = self.gt_transform(gt_map)
             end = time.time()
-            return self.train_permulation[index] + 1, img, gt_map, (end - start)
+            random_number = random.randint(0, 9)
+            return self.train_permulation[index] + 1, img[random_number], gt_map[random_number], (end - start)
         else:
             img, gt_map = self.imgs[self.eval_permulation[index]]
             img = transforms.Compose([

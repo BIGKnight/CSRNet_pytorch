@@ -1,3 +1,6 @@
+import torch
+import torch.nn as nn
+import matplotlib.pyplot as plt
 import sys
 import numpy as np
 import random
@@ -6,10 +9,13 @@ from model import CSRNet
 import torchvision.transforms as transforms
 from DatasetConstructor import DatasetConstructor
 import metrics
+import argparse
 from PIL import Image
 MAE = 10240000
 MSE = 10240000
+import time
 SHANGHAITECH = "B"
+# %matplotlib inline
 # data_load
 img_dir = "/home/zzn/part_" + SHANGHAITECH + "_final/train_data/images"
 gt_dir = "/home/zzn/part_" + SHANGHAITECH + "_final/train_data/gt_map"
@@ -18,39 +24,13 @@ transform_a = transforms.Compose([
                 transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
             ])
 gt_transform_a =  transforms.ToTensor()
-
 crop_height = 384
 crop_weight = 512
 
-default_transform = transforms.Compose([
-        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
-        transforms.TenCrop((crop_height, crop_weight), vertical_flip=False),
-        transforms.Lambda(
-            lambda crops: [
-                transforms.ToTensor()(crop) for crop in crops
-            ]
-        ),
-        transforms.Lambda(
-            lambda crops: [
-                transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))(crop) for crop in crops
-            ]
-        ),
-        transforms.Lambda(lambda crops: torch.stack(crops))
-    ])
-
-gt_transform = transforms.Compose([
-        transforms.TenCrop((crop_height, crop_weight), vertical_flip=False),
-        transforms.Lambda(
-            lambda crops: [
-                transforms.ToTensor()(crop) for crop in crops
-            ]
-        ),
-        transforms.Lambda(lambda crops: torch.stack(crops))
-    ])
-
-dataset = DatasetConstructor(img_dir, gt_dir, 400, 20, default_transform, gt_transform)
-train_loader = torch.utils.data.DataLoader(dataset=dataset, batch_size=1)
+dataset = DatasetConstructor(img_dir, gt_dir, 400, 20)
+train_loader = torch.utils.data.DataLoader(dataset=dataset, batch_size=4)
 eval_loader = torch.utils.data.DataLoader(dataset=dataset, batch_size=1)
+
 # obtain the gpu device
 assert torch.cuda.is_available()
 cuda_device = torch.device("cuda")
@@ -59,11 +39,13 @@ cuda_device = torch.device("cuda")
 net = CSRNet().to(cuda_device)
 gt_map_process_model = GroundTruthProcess(1, 1, 8).to(cuda_device) # to keep the same resolution with the prediction
 
+momentum=0.95
 # set optimizer and estimator
 criterion = metrics.Loss().to(cuda_device)
-optimizer = torch.optim.Adam(net.parameters(), lr=1e-5, weight_decay=0.95)
+optimizer = torch.optim.Adam(net.parameters(), 1e-6, weight_decay=5*1e-4)
 ae_batch = metrics.AEBatch().to(cuda_device)
 se_batch = metrics.SEBatch().to(cuda_device)
+
 for epoch_index in range(500):
     dataset = dataset.train_model().shuffle()
     # train
@@ -151,9 +133,16 @@ for epoch_index in range(500):
         # B
         x = train_img.view(-1, 3, 384, 512).cuda()
         y = train_gt.view(-1, 1, 384, 512).cuda()
+
         # A
         #       x = train_img.cuda()
         #       y = train_gt.cuda()
+        #       figure, (input_picture, gt_picture) = plt.subplots(1, 2, figsize=(20, 4))
+        #       input_picture.imshow(train_img[0].view(3, 384, 512).permute(1, 2, 0).numpy())
+        #       input_picture.set_title("origin")
+        #       gt_picture.imshow(train_gt[0].view(384, 512).numpy(), cmap=plt.cm.jet)
+        #       gt_picture.set_title("gt")
+        #       plt.show()
         prediction = net(x)
         groundtruth = gt_map_process_model(y)
         loss = criterion(prediction, groundtruth)

@@ -55,7 +55,7 @@ class DatasetConstructor(data.Dataset):
         self.gt_transform = gt_transformer
         self.train = if_train
         self.train_permulation = np.random.permutation(self.train_num)
-        self.eval_permulation = random.sample(range(0, self.train_num - 1),  self.validate_num)
+        self.eval_permulation = random.sample(range(0, self.train_num),  self.validate_num)
         for i in range(self.train_num):
             img_name = '/IMG_' + str(i + 1) + ".jpg"
             gt_map_name = '/GT_IMG_' + str(i + 1) + ".npy"

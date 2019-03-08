@@ -15,7 +15,7 @@ MAE = 10240000
 MSE = 10240000
 import time
 SHANGHAITECH = "B"
-# %matplotlib inline
+
 # data_load
 img_dir = "/home/zzn/part_" + SHANGHAITECH + "_final/train_data/images"
 gt_dir = "/home/zzn/part_" + SHANGHAITECH + "_final/train_data/gt_map"

@@ -10,6 +10,7 @@ class CSRNet(nn.Module):
         self.front_end = nn.Sequential(*(list(list(models.vgg16(True).children())[0].children())[0:23]))
         self.back_end = make_layers(self.backend_feat, in_channels=512, dilation=True)
         self.output_layer = nn.Conv2d(64, 1, kernel_size=1)
+        self._initialize_weights()
 
     def forward(self, x):
         x = self.front_end(x)

@@ -66,7 +66,7 @@ if __name__ == "__main__":
         height = img.size[1]
         weight = img.size[0]
         points = scio.loadmat(gt_path)['image_info'][0][0][0][0][0]
-        gt = get_density_map_gaussian(height, weight, points, False, 8)
+        gt = get_density_map_gaussian(height, weight, points, False, 4)
         gt = np.reshape(gt, [height, weight])  # transpose into w, h
         np.save(output_gt_dir + "/GT_IMG_" + str(i + 1), gt)
         print("complete!")

@@ -1,19 +1,14 @@
-import torch
-import torch.nn as nn
-import matplotlib.pyplot as plt
 import sys
 import numpy as np
 import random
 from utils import *
-from model import CSRNet
+from net_files.model import CSRNet
 import torchvision.transforms as transforms
-from DatasetConstructor import DatasetConstructor
-import metrics
-import argparse
+from Dataset_processing.TrainDatasetConstructor import DatasetConstructor
+from net_files import metrics
 from PIL import Image
 MAE = 10240000
 MSE = 10240000
-import time
 SHANGHAITECH = "B"
 
 # data_load

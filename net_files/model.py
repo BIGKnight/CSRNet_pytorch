@@ -1,5 +1,6 @@
 import torch.nn as nn
 from torchvision import models
+import torch.nn.functional as functional
 
 
 class CSRNet(nn.Module):
@@ -13,9 +14,11 @@ class CSRNet(nn.Module):
         self._initialize_weights()
 
     def forward(self, x):
+        img_shape = x.shape
         x = self.front_end(x)
         x = self.back_end(x)
         x = self.output_layer(x)
+        x= functional.interpolate(x, img_shape[2:], mode="bilinear", align_corners=True)
         return x
 
     def _initialize_weights(self):

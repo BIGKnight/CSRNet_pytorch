@@ -7,6 +7,7 @@ import torch.utils.data as data
 import time
 from utils import HSI_Calculator
 import torch
+import math
 
 
 class EvalDatasetConstructor(data.Dataset):
@@ -21,15 +22,16 @@ class EvalDatasetConstructor(data.Dataset):
         self.data_root = data_dir_path
         self.gt_root = gt_dir_path
         self.calcu = HSI_Calculator()
-        start = time.time()
         self.mode = mode
         for i in range(self.validate_num):
             img_name = '/IMG_' + str(i + 1) + ".jpg"
             gt_map_name = '/GT_IMG_' + str(i + 1) + ".npy"
             img = Image.open(self.data_root + img_name).convert("RGB")
+            height = img.size[1]
+            width = img.size[0]
+            img = transforms.Resize([math.ceil(height / 128) * 128, (math.ceil(width / 128) * 128)])(img)
             gt_map = Image.fromarray(np.squeeze(np.load(self.gt_root + gt_map_name)))
             self.imgs.append([img, gt_map])
-        end = time.time()
 
     def __getitem__(self, index):
         if self.mode == 'crop':
@@ -44,20 +46,22 @@ class EvalDatasetConstructor(data.Dataset):
             img_shape = img.shape  # C, H, W
 
             img = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))(img)
-            padding_h = img_shape[1] % 8
-            padding_w = img_shape[2] % 8
-            pads = [padding_w // 2,
-                    padding_w - padding_w // 2,
-                    padding_h // 2,
-                    padding_h - padding_h // 2]
-            img = functional.pad(
-                img,
-                pads,
-                value=0.
-            )  # left, right, up, down
+            # padding_h = 8 - img_shape[1] % 8
+            # padding_w = 8 - img_shape[2] % 8
+            # pads = [padding_w // 2,
+            #         padding_w - padding_w // 2,
+            #         padding_h // 2,
+            #         padding_h - padding_h // 2]
+            # img = functional.pad(
+            #     img,
+            #     pads,
+            #     value=0.
+            # )  # left, right, up, down
 
-            patch_height = (img_shape[1] + padding_h) // 4
-            patch_width = (img_shape[2] + padding_w) // 4
+            # patch_height = (img_shape[1] + padding_h) // 4
+            # patch_width = (img_shape[2] + padding_w) // 4
+            patch_height = (img_shape[1]) // 4
+            patch_width = (img_shape[2]) // 4
             imgs = []
             for i in range(7):
                 for j in range(7):

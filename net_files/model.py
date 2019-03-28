@@ -18,7 +18,7 @@ class CSRNet(nn.Module):
         x = self.front_end(x)
         x = self.back_end(x)
         x = self.output_layer(x)
-        x= functional.interpolate(x, img_shape[2:], mode="bilinear", align_corners=True)
+        # x= functional.interpolate(x, img_shape[2:], mode="bilinear", align_corners=True)
         return x
 
     def _initialize_weights(self):

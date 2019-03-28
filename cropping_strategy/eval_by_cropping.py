@@ -1,6 +1,4 @@
 import random
-import torch
-import net_files.model
 import math
 import numpy as np
 import sys
@@ -21,10 +19,12 @@ def eval_model(config, eval_loader, modules, if_show_sample=False):
     counter = 0
     for eval_img_index, eval_img, eval_gt, eval_data_ptc in eval_loader:
         eval_patchs = torch.squeeze(eval_img)
-        eval_patchs_shape = eval_patchs.shape
         eval_gt_shape = eval_gt.shape
-        prediction_map = torch.zeros(1, 1, eval_patchs_shape[2] * 4, eval_patchs_shape[3] * 4).cuda()
         eval_prediction = net(eval_patchs)
+
+        prediction_map = torch.zeros(eval_gt_shape).cuda()
+        eval_patchs_shape = eval_prediction.shape
+        # print(eval_patchs_shape, eval_gt_shape)
         for i in range(7):
             for j in range(7):
                 start_h = math.floor(eval_patchs_shape[2] / 4)
@@ -51,10 +51,6 @@ def eval_model(config, eval_loader, modules, if_show_sample=False):
                                                                                           i * 7 + j:i * 7 + j + 1, :,
                                                                                           start_h:start_h + valid_h,
                                                                                           start_w:start_w + valid_w]
-        padding_h = (eval_patchs_shape[2] * 4 - eval_gt_shape[2]) // 2
-        padding_w = (eval_patchs_shape[3] * 4 - eval_gt_shape[3]) // 2
-        prediction_map = prediction_map[:, :, padding_h:padding_h + eval_gt_shape[2],
-                         padding_w:padding_w + eval_gt_shape[3]]
         eval_loss = criterion(prediction_map, eval_gt).data.cpu().numpy()
         batch_ae = ae_batch(prediction_map, eval_gt).data.cpu().numpy()
         batch_se = se_batch(prediction_map, eval_gt).data.cpu().numpy()
@@ -65,11 +61,9 @@ def eval_model(config, eval_loader, modules, if_show_sample=False):
         pred_counts = np.sum(validate_pred_map)
         # random show 1 sample
         if rand_number == counter and if_show_sample:
-            origin_image = Image.open("/home/zzn/part_" + config['SHANGHAITECH'] + "_final/test_data/images/IMG_" + str(
-                eval_img_index.numpy()[0]) + ".jpg")
+            origin_image = Image.open("/home/zzn/part_" + config['SHANGHAITECH'] + "_final/test_data/images/IMG_" + str(eval_img_index.numpy()[0]) + ".jpg")
             show(origin_image, validate_gt_map, validate_pred_map, eval_img_index.numpy()[0])
-            sys.stdout.write(
-                'The gt counts of the above sample:{}, and the pred counts:{}\n'.format(gt_counts, pred_counts))
+            sys.stdout.write('The gt counts of the above sample:{}, and the pred counts:{}\n'.format(gt_counts, pred_counts))
 
         loss_.append(eval_loss)
         MAE_.append(batch_ae)

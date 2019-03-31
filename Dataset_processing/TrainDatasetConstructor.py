@@ -31,7 +31,10 @@ class TrainDatasetConstructor(data.Dataset):
             height = img.size[1]
             width = img.size[0]
             img = transforms.Resize([math.ceil(height / 128) * 128, (math.ceil(width / 128) * 128)])(img)
+            img = transforms.ToTensor()(img).cuda()
+            img = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))(img)
             gt_map = Image.fromarray(np.squeeze(np.load(self.gt_root + gt_map_name)))
+            gt_map = transforms.ToTensor()(gt_map).cuda()
             self.imgs.append([img, gt_map])
 
     def __getitem__(self, index):
@@ -60,15 +63,15 @@ class TrainDatasetConstructor(data.Dataset):
         elif self.mode == 'whole':
             start = time.time()
             img, gt_map = self.imgs[self.permulation[index]]
-            img = transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2)(img)
-            flip_random = random.random()
-            if flip_random > 0.5:
-                img = F.hflip(img)
-                gt_map = F.hflip(gt_map)
-            img = transforms.ToTensor()(img).cuda()
-            gt_map = transforms.ToTensor()(gt_map).cuda()
+#             img = transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2)(img)
+#             flip_random = random.random()
+#             if flip_random > 0.5:
+#                 img = F.hflip(img)
+#                 gt_map = F.hflip(gt_map)
+#             img = transforms.ToTensor()(img).cuda()
+#             gt_map = transforms.ToTensor()(gt_map).cuda()
             end = time.time()
-            img = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))(img)
+#             img = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))(img)
             return self.permulation[index] + 1, img, gt_map, (end - start)
 
     def __len__(self):

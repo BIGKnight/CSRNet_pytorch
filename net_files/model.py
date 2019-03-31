@@ -8,7 +8,7 @@ class CSRNet(nn.Module):
         super(CSRNet, self).__init__()
         self.seen = 0
         self.backend_feat = [512, 512, 512, 256, 128, 64]
-        self.front_end = nn.Sequential(*(list(list(models.vgg16(True).children())[0].children())[0:23]))
+        self.front_end = nn.Sequential((list(list(models.vgg16(True).children())[0].children())[0:23]))
         self.back_end = make_layers(self.backend_feat, in_channels=512, dilation=True)
         self.output_layer = nn.Conv2d(64, 1, kernel_size=1)
         self._initialize_weights()
@@ -22,7 +22,7 @@ class CSRNet(nn.Module):
         return x
 
     def _initialize_weights(self):
-        for m in self.modules():
+        for m in self.back_end.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.normal_(m.weight, std=0.01)
                 if m.bias is not None:

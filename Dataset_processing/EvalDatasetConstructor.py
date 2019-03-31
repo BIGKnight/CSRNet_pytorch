@@ -30,7 +30,10 @@ class EvalDatasetConstructor(data.Dataset):
             height = img.size[1]
             width = img.size[0]
             img = transforms.Resize([math.ceil(height / 128) * 128, (math.ceil(width / 128) * 128)])(img)
+            img = transforms.ToTensor()(img).cuda()
             gt_map = Image.fromarray(np.squeeze(np.load(self.gt_root + gt_map_name)))
+            gt_map = transforms.ToTensor()(gt_map).cuda()
+            img = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))(img)
             self.imgs.append([img, gt_map])
 
     def __getitem__(self, index):
@@ -76,9 +79,9 @@ class EvalDatasetConstructor(data.Dataset):
         elif self.mode == 'whole':
             start = time.time()
             img, gt_map = self.imgs[index]
-            img = transforms.ToTensor()(img).cuda()
-            gt_map = transforms.ToTensor()(gt_map).cuda()
-            img = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))(img)
+#             img = transforms.ToTensor()(img).cuda()
+#             gt_map = transforms.ToTensor()(gt_map).cuda()
+#             img = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))(img)
             end = time.time()
             return index + 1, img, gt_map, (end - start)
 

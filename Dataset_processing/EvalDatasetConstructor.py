@@ -29,61 +29,55 @@ class EvalDatasetConstructor(data.Dataset):
             img = Image.open(self.data_root + img_name).convert("RGB")
             height = img.size[1]
             width = img.size[0]
-            img = transforms.Resize([math.ceil(height / 128) * 128, (math.ceil(width / 128) * 128)])(img)
-            img = transforms.ToTensor()(img).cuda()
+#             resize_height = height
+#             resize_width = width
+#             if resize_height <= 400:
+#                 tmp = resize_height
+#                 resize_height = 400
+#                 resize_width = (resize_height / tmp) * resize_width
+
+#             if resize_width <= 400:
+#                 tmp = resize_width
+#                 resize_width = 400
+#                 resize_height = (resize_width / tmp) * resize_height
+            
+#             resize_height = math.ceil(resize_height / 200) * 200
+#             resize_width = math.ceil(resize_width / 200) * 200
+
+            resize_height = math.ceil(height / 8) * 8
+            resize_width = math.ceil(width / 8) * 8
+            
+            img = transforms.Resize([resize_height, resize_width])(img)
             gt_map = Image.fromarray(np.squeeze(np.load(self.gt_root + gt_map_name)))
-            gt_map = transforms.ToTensor()(gt_map).cuda()
-            img = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))(img)
             self.imgs.append([img, gt_map])
 
     def __getitem__(self, index):
         if self.mode == 'crop':
-            start = time.time()
             img, gt_map = self.imgs[index]
-            # H, S, I = self.calcu(img)
-            # I = I.numpy()
-            # if I < 0.432:
-            #     img = F.adjust_brightness(img, 0.432 / I)
             img = transforms.ToTensor()(img).cuda()
             gt_map = transforms.ToTensor()(gt_map).cuda()
             img_shape = img.shape  # C, H, W
-
             img = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))(img)
-            # padding_h = 8 - img_shape[1] % 8
-            # padding_w = 8 - img_shape[2] % 8
-            # pads = [padding_w // 2,
-            #         padding_w - padding_w // 2,
-            #         padding_h // 2,
-            #         padding_h - padding_h // 2]
-            # img = functional.pad(
-            #     img,
-            #     pads,
-            #     value=0.
-            # )  # left, right, up, down
-
-            # patch_height = (img_shape[1] + padding_h) // 4
-            # patch_width = (img_shape[2] + padding_w) // 4
-            patch_height = (img_shape[1]) // 4
-            patch_width = (img_shape[2]) // 4
             imgs = []
-            for i in range(7):
-                for j in range(7):
-                    start_h = (patch_height // 2) * i
-                    start_w = (patch_width // 2) * j
-                    # print(img.shape, start_h, start_w, patch_height, patch_width)
-                    imgs.append(img[:, start_h:start_h + patch_height, start_w:start_w + patch_width])
+            patch_h_num = (img.shape[1] - 400) // 200 + 1
+            patch_w_num = (img.shape[2] - 400) // 200 + 1
+            for i in range(patch_h_num):
+                x = i * 200
+                for j in range(patch_w_num):
+                    y = j * 200
+                    imgs.append(img[:, x:x+400, y:y+400])
             imgs = torch.stack(imgs)
-            end = time.time()
-            return index + 1, imgs, gt_map, (end - start)
+            return index + 1, imgs, gt_map, img_shape[1], img_shape[2]
 
         elif self.mode == 'whole':
-            start = time.time()
             img, gt_map = self.imgs[index]
-#             img = transforms.ToTensor()(img).cuda()
-#             gt_map = transforms.ToTensor()(gt_map).cuda()
-#             img = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))(img)
-            end = time.time()
-            return index + 1, img, gt_map, (end - start)
+#             H,S,I = self.calcu(img)
+#             if I.numpy() < 0.28:
+#                 img = F.adjust_brightness(img, 0.37 / I.numpy())
+            img = transforms.ToTensor()(img)
+            gt_map = transforms.ToTensor()(gt_map)
+            img = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))(img)
+            return index + 1, img.cuda(), gt_map.cuda()
 
     def __len__(self):
         return self.validate_num

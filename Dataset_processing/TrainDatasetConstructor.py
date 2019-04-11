@@ -15,7 +15,9 @@ class TrainDatasetConstructor(data.Dataset):
                  data_dir_path,
                  gt_dir_path,
                  train_num,
-                 mode
+                 mode='whole',
+                 if_random_hsi=False,
+                 if_flip=False
                  ):
         self.train_num = train_num
         self.imgs = []
@@ -24,55 +26,75 @@ class TrainDatasetConstructor(data.Dataset):
         self.permulation = np.random.permutation(self.train_num)
         self.calcu = HSI_Calculator()
         self.mode = mode
+        self.if_random_hsi = if_random_hsi
+        self.if_flip = if_flip
         for i in range(self.train_num):
             img_name = '/IMG_' + str(i + 1) + ".jpg"
             gt_map_name = '/GT_IMG_' + str(i + 1) + ".npy"
             img = Image.open(self.data_root + img_name).convert("RGB")
             height = img.size[1]
             width = img.size[0]
-            img = transforms.Resize([math.ceil(height / 128) * 128, (math.ceil(width / 128) * 128)])(img)
-            img = transforms.ToTensor()(img).cuda()
-            img = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))(img)
+            
+#             resize_height = height
+#             resize_width = width
+#             if resize_height <= 400:
+#                 tmp = resize_height
+#                 resize_height = 400
+#                 resize_width = (resize_height / tmp) * resize_width
+
+#             if resize_width <= 400:
+#                 tmp = resize_width
+#                 resize_width = 400
+#                 resize_height = (resize_width / tmp) * resize_height
+            
+#             resize_height = math.ceil(resize_height / 200) * 200
+#             resize_width = math.ceil(resize_width / 200) * 200
+
+            resize_height = math.ceil(height / 8) * 8
+            resize_width = math.ceil(width / 8) * 8
+            
+            img = transforms.Resize([resize_height, resize_width])(img)
             gt_map = Image.fromarray(np.squeeze(np.load(self.gt_root + gt_map_name)))
-            gt_map = transforms.ToTensor()(gt_map).cuda()
             self.imgs.append([img, gt_map])
 
     def __getitem__(self, index):
         if self.mode == 'crop':
-            start = time.time()
             img, gt_map = self.imgs[self.permulation[index]]
-            img = transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2)(img)
-            flip_random = random.random()
-            if flip_random > 0.5:
-                img = F.hflip(img)
-                gt_map = F.hflip(gt_map)
+            if self.if_random_hsi:
+                img = transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2)(img)
+            if self.if_flip:
+                flip_random = random.random()
+                if flip_random > 0.5:
+                    img = F.hflip(img)
+                    gt_map = F.hflip(gt_map)
+                    
             img = transforms.ToTensor()(img)
             gt_map = transforms.ToTensor()(gt_map)
             img_shape = img.shape  # C, H, W
-            random_h = random.randint(0, (3 * img_shape[1] // 4) - 1)
-            random_w = random.randint(0, (3 * img_shape[2] // 4) - 1)
-            patch_height = img_shape[1] // 4
-            patch_width = img_shape[2] // 4
+            random_h = random.randint(0, img_shape[1] - 400)
+            random_w = random.randint(0, img_shape[2] - 400)
+            patch_height = 400
+            patch_width = 400
             img = img[:, random_h:random_h + patch_height, random_w:random_w + patch_width]
             gt_map = gt_map[:, random_h // 8:random_h // 8 + patch_height // 8, random_w // 8:random_w // 8 + patch_width // 8]
-            end = time.time()
             img = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))(img).cuda()
             gt_map = gt_map.cuda()
-            return self.permulation[index] + 1, img, gt_map, (end - start)
+            return self.permulation[index] + 1, img, gt_map
 
         elif self.mode == 'whole':
-            start = time.time()
             img, gt_map = self.imgs[self.permulation[index]]
-#             img = transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2)(img)
-#             flip_random = random.random()
-#             if flip_random > 0.5:
-#                 img = F.hflip(img)
-#                 gt_map = F.hflip(gt_map)
-#             img = transforms.ToTensor()(img).cuda()
-#             gt_map = transforms.ToTensor()(gt_map).cuda()
-            end = time.time()
-#             img = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))(img)
-            return self.permulation[index] + 1, img, gt_map, (end - start)
+            if self.if_random_hsi:
+                img = transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2)(img)
+            if self.if_flip:
+                flip_random = random.random()
+                if flip_random > 0.5:
+                    img = F.hflip(img)
+                    gt_map = F.hflip(gt_map)
+                     
+            img = transforms.ToTensor()(img)
+            img = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))(img)
+            gt_map = transforms.ToTensor()(gt_map)
+            return self.permulation[index] + 1, img.cuda(), gt_map.cuda()
 
     def __len__(self):
         return self.train_num

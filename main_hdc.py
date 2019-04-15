@@ -34,8 +34,8 @@ img_dir = "/home/zzn/Documents/Datasets/part_" + config['SHANGHAITECH'] + "_fina
 gt_dir = "/home/zzn/Documents/Datasets/part_" + config['SHANGHAITECH'] + "_final/train_data/gt_map"
 img_dir_t = "/home/zzn/Documents/Datasets/part_" + config['SHANGHAITECH'] + "_final/test_data/images"
 gt_dir_t = "/home/zzn/Documents/Datasets/part_" + config['SHANGHAITECH'] + "_final/test_data/gt_map"
-model_save_path = "/home/zzn/PycharmProjects/CSRNet_pytorch-master/checkpoints/model_hdc.pkl"
-f = open("/home/zzn/PycharmProjects/CSRNet_pytorch-master/logs/log_hdc.txt", "w")
+model_save_path = "/home/zzn/PycharmProjects/CSRNet_pytorch-master/checkpoints/model_hdc_1x1_sgd.pkl"
+f = open("/home/zzn/PycharmProjects/CSRNet_pytorch-master/logs/log_1x1_sgd.txt", "w")
 
 
 # data_load
@@ -53,8 +53,8 @@ net = CSRNet_HDC().cuda()
 # net = torch.load("/home/zzn/Downloads/CSRNet_pytorch-master/checkpoints/model_a_whole_differ_loss_12:08_0329.pkl")
 # set optimizer and estimator
 
-# optimizer = torch.optim.SGD(net.parameters(), config['learning_rate'], 0.95, 5e-4)
-optimizer = torch.optim.Adam(net.parameters(), 1e-6)
+optimizer = torch.optim.SGD(net.parameters(), config['learning_rate'], 0.95, 5e-4)
+# optimizer = torch.optim.Adam(net.parameters(), 1e-6, weight_decay=5e-4)
 criterion = Loss().cuda()
 ae_batch = AEBatch().cuda()
 se_batch = SEBatch().cuda()
